@@ -2,27 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Abacus Teaching Tool</title>
+    <title>Abacus Teacher Tool</title>
     <style>
-        /* CSS Styling */
+        /* CSS Styling with Gradient Background */
 
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+            /* Gradient Background */
+            background: linear-gradient(to bottom right, #ffecd2, #fcb69f);
         }
 
         h1 {
             text-align: center;
+            margin-top: 20px;
+            color: #333;
+            font-size: 36px;
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Trademark-like text */
+        h1 .trademark {
+            position: absolute;
+            top: -10px;
+            right: -80px;
+            font-size: 14px;
+            color: #555;
+            font-style: italic;
+        }
+
+        /* Center the title container */
+        .title-container {
+            text-align: center;
+            position: relative;
         }
 
         form#settingsForm {
             max-width: 500px;
-            margin: 0 auto;
+            margin: 20px auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
         }
 
         label {
             display: block;
             margin-top: 10px;
+            color: #333;
         }
 
         label input,
@@ -30,15 +58,33 @@
             width: 100%;
             padding: 5px;
             margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
 
         button {
             margin-top: 15px;
             padding: 10px 20px;
+            border-radius: 5px;
+            background-color: #ff7e5f;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #ea5455;
         }
 
         #results {
             margin-top: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
         }
 
         .question-block {
@@ -49,19 +95,26 @@
 
         .question-block p {
             font-size: 18px;
+            color: #333;
         }
 
         .abacus-canvas {
             display: block;
             margin: 20px auto;
             border: 1px solid #000;
+            background-color: #fff;
         }
     </style>
 </head>
 <body>
     <!-- HTML Structure -->
 
-    <h1>Abacus Teaching Tool</h1>
+    <div class="title-container">
+        <h1>Abacus Teacher Tool
+            <span class="trademark">by Bindu</span>
+        </h1>
+    </div>
+
     <form id="settingsForm">
         <label>
             Number of Digits:
@@ -79,9 +132,9 @@
             Operation:
             <select id="operation">
                 <option value="+">Addition</option>
-                <option value="-">Subtraction</option>
                 <option value="*">Multiplication</option>
                 <option value="/">Division</option>
+                <option value="mixed">Combination of Addition and Subtraction</option>
             </select>
         </label>
         <label>
@@ -108,12 +161,19 @@
             for (let i = 0; i < samples; i++) {
                 let question = '';
                 let answer = null;
+                let validQuestion = true;
 
                 for (let j = 0; j < rows; j++) {
                     let num = generateRandomNumber(digits);
 
+                    // For mixed operations
+                    let currentOperation = operation;
+                    if (operation === 'mixed') {
+                        currentOperation = Math.random() < 0.5 ? '+' : '-';
+                    }
+
                     // Handle division to avoid fractions and division by zero
-                    if (operation === '/' && j > 0) {
+                    if (currentOperation === '/' && j > 0) {
                         while (num === 0 || answer % num !== 0) {
                             num = generateRandomNumber(digits);
                         }
@@ -123,9 +183,21 @@
                         question += num;
                         answer = num;
                     } else {
-                        question += ` ${operation} ${num}`;
-                        answer = computeOperation(answer, num, operation);
+                        question += ` ${currentOperation} ${num}`;
+                        answer = computeOperation(answer, num, currentOperation);
+
+                        // Ensure the answer stays positive for abacus representation
+                        if (answer < 0) {
+                            validQuestion = false;
+                            break;
+                        }
                     }
+                }
+
+                // Skip if answer is negative or undefined
+                if (!validQuestion || answer < 0 || answer === undefined || isNaN(answer)) {
+                    i--; // Decrement to generate another sample
+                    continue;
                 }
 
                 // Create a block for each question
@@ -153,7 +225,7 @@
         }
 
         function generateRandomNumber(digits) {
-            const min = digits === 1 ? 0 : Math.pow(10, digits - 1);
+            const min = digits === 1 ? 1 : Math.pow(10, digits - 1);
             const max = Math.pow(10, digits) - 1;
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
@@ -163,7 +235,7 @@
                 case '+': return a + b;
                 case '-': return a - b;
                 case '*': return a * b;
-                case '/': return b !== 0 ? a / b : 'Undefined';
+                case '/': return b !== 0 ? a / b : undefined;
                 default: return null;
             }
         }
