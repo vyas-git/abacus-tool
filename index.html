@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Abacus Teaching Tool</title>
+    <style>
+        /* CSS Styling */
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form#settingsForm {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        label input,
+        label select {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+        }
+
+        #results {
+            margin-top: 30px;
+        }
+
+        .question-block {
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+
+        .question-block p {
+            font-size: 18px;
+        }
+
+        .abacus-canvas {
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML Structure -->
+
+    <h1>Abacus Teaching Tool</h1>
+    <form id="settingsForm">
+        <label>
+            Number of Digits:
+            <select id="digits">
+                <option value="1">One Digit</option>
+                <option value="2">Two Digits</option>
+                <option value="3">Three Digits</option>
+            </select>
+        </label>
+        <label>
+            Number of Rows (Iterations):
+            <input type="number" id="rows" min="1" value="3">
+        </label>
+        <label>
+            Operation:
+            <select id="operation">
+                <option value="+">Addition</option>
+                <option value="-">Subtraction</option>
+                <option value="*">Multiplication</option>
+                <option value="/">Division</option>
+            </select>
+        </label>
+        <label>
+            Number of Sample Questions:
+            <input type="number" id="samples" min="1" value="5">
+        </label>
+        <button type="button" onclick="generateQuestions()">Generate Questions</button>
+    </form>
+
+    <div id="results"></div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        function generateQuestions() {
+            const digits = parseInt(document.getElementById('digits').value);
+            const rows = parseInt(document.getElementById('rows').value);
+            const operation = document.getElementById('operation').value;
+            const samples = parseInt(document.getElementById('samples').value);
+            const resultsDiv = document.getElementById('results');
+
+            // Clear previous results
+            resultsDiv.innerHTML = '';
+
+            for (let i = 0; i < samples; i++) {
+                let question = '';
+                let answer = null;
+
+                for (let j = 0; j < rows; j++) {
+                    let num = generateRandomNumber(digits);
+
+                    // Handle division to avoid fractions and division by zero
+                    if (operation === '/' && j > 0) {
+                        while (num === 0 || answer % num !== 0) {
+                            num = generateRandomNumber(digits);
+                        }
+                    }
+
+                    if (j === 0) {
+                        question += num;
+                        answer = num;
+                    } else {
+                        question += ` ${operation} ${num}`;
+                        answer = computeOperation(answer, num, operation);
+                    }
+                }
+
+                // Create a block for each question
+                const questionBlock = document.createElement('div');
+                questionBlock.className = 'question-block';
+
+                const questionElem = document.createElement('p');
+                questionElem.innerHTML = `<strong>Question:</strong> ${question} = ?`;
+                questionBlock.appendChild(questionElem);
+
+                const answerElem = document.createElement('p');
+                answerElem.innerHTML = `<strong>Answer:</strong> ${answer}`;
+                questionBlock.appendChild(answerElem);
+
+                // Create canvas for abacus image
+                const canvas = document.createElement('canvas');
+                canvas.width = 400;
+                canvas.height = 200;
+                canvas.className = 'abacus-canvas';
+                drawAbacus(canvas, answer);
+                questionBlock.appendChild(canvas);
+
+                resultsDiv.appendChild(questionBlock);
+            }
+        }
+
+        function generateRandomNumber(digits) {
+            const min = digits === 1 ? 0 : Math.pow(10, digits - 1);
+            const max = Math.pow(10, digits) - 1;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function computeOperation(a, b, operation) {
+            switch (operation) {
+                case '+': return a + b;
+                case '-': return a - b;
+                case '*': return a * b;
+                case '/': return b !== 0 ? a / b : 'Undefined';
+                default: return null;
+            }
+        }
+
+        function drawAbacus(canvas, number) {
+            const ctx = canvas.getContext('2d');
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the abacus frame
+            drawAbacusFrame(ctx, canvas.width, canvas.height);
+
+            // Draw the beads representing the number
+            drawAbacusBeads(ctx, number, canvas.width, canvas.height);
+        }
+
+        function drawAbacusFrame(ctx, width, height) {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+
+            // Draw outer frame
+            ctx.strokeRect(50, 20, width - 100, height - 40);
+
+            // Draw horizontal bar
+            ctx.beginPath();
+            ctx.moveTo(50, height / 2);
+            ctx.lineTo(width - 50, height / 2);
+            ctx.stroke();
+        }
+
+        function drawAbacusBeads(ctx, number, width, height) {
+            const digits = number.toString().split('').reverse();
+            const maxDigits = Math.max(digits.length, 5);
+            const beadSpacing = (width - 100) / maxDigits;
+            const upperBeadY = height / 2 - 30;
+            const lowerBeadY = height / 2 + 30;
+
+            for (let i = 0; i < maxDigits; i++) {
+                const digit = parseInt(digits[i] || '0');
+                const x = width - 50 - beadSpacing * i - beadSpacing / 2;
+
+                // Draw vertical rods
+                ctx.beginPath();
+                ctx.moveTo(x, 20);
+                ctx.lineTo(x, height - 20);
+                ctx.stroke();
+
+                // Draw upper beads (heaven beads)
+                drawHeavenBeads(ctx, x, upperBeadY, digit);
+
+                // Draw lower beads (earth beads)
+                drawEarthBeads(ctx, x, lowerBeadY, digit);
+            }
+        }
+
+        function drawHeavenBeads(ctx, x, y, digit) {
+            const beadRadius = 10;
+            const heavenValue = Math.floor(digit / 5);
+
+            // Draw one heaven bead; if heavenValue is 1, move it down
+            const beadY = heavenValue === 1 ? y + 20 : y;
+            ctx.beginPath();
+            ctx.arc(x, beadY, beadRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'sienna';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawEarthBeads(ctx, x, y, digit) {
+            const beadRadius = 10;
+            const earthValue = digit % 5;
+
+            for (let i = 0; i < 4; i++) {
+                const beadY = y + i * 20;
+                const isMovedUp = i < earthValue;
+                const positionY = isMovedUp ? beadY - 20 : beadY;
+
+                ctx.beginPath();
+                ctx.arc(x, positionY, beadRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'sienna';
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+    </script>
+</body>
+</html>
