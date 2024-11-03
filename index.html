@@ -104,7 +104,20 @@
             border: 1px solid #000;
             background-color: #fff;
         }
+
+        /* New styling for the PDF download button */
+        #downloadBtn {
+            display: none; /* Hidden by default */
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        #downloadBtn button {
+            margin-top: 0;
+        }
     </style>
+    <!-- Include jsPDF library from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <!-- HTML Structure -->
@@ -132,8 +145,8 @@
             Operation:
             <select id="operation">
                 <option value="+">Addition</option>
-                <option value="mixed">Addition and Subtraction</option>
-
+                <option value="addsub">Addition and Subtraction</option>
+                <option value="-">Subtraction</option>
                 <option value="*">Multiplication</option>
                 <option value="/">Division</option>
             </select>
@@ -147,17 +160,27 @@
 
     <div id="results"></div>
 
+    <!-- Download Button -->
+    <div id="downloadBtn">
+        <button type="button" onclick="downloadPDF()">Download Question Paper as PDF</button>
+    </div>
+
     <!-- JavaScript Logic -->
     <script>
+        const questionsList = []; // Array to store questions
+
         function generateQuestions() {
             const digits = parseInt(document.getElementById('digits').value);
             const rows = parseInt(document.getElementById('rows').value);
             const operation = document.getElementById('operation').value;
             const samples = parseInt(document.getElementById('samples').value);
             const resultsDiv = document.getElementById('results');
+            const downloadBtn = document.getElementById('downloadBtn');
 
             // Clear previous results
             resultsDiv.innerHTML = '';
+            questionsList.length = 0; // Clear previous questions
+            downloadBtn.style.display = 'none'; // Hide the download button
 
             for (let i = 0; i < samples; i++) {
                 let question = '';
@@ -167,9 +190,10 @@
                 for (let j = 0; j < rows; j++) {
                     let num = generateRandomNumber(digits);
 
-                    // For mixed operations
                     let currentOperation = operation;
-                    if (operation === 'mixed') {
+
+                    // For Addition and Subtraction combination
+                    if (operation === 'addsub') {
                         currentOperation = Math.random() < 0.5 ? '+' : '-';
                     }
 
@@ -201,6 +225,9 @@
                     continue;
                 }
 
+                // Store the question
+                questionsList.push({ question: question });
+
                 // Create a block for each question
                 const questionBlock = document.createElement('div');
                 questionBlock.className = 'question-block';
@@ -222,6 +249,11 @@
                 questionBlock.appendChild(canvas);
 
                 resultsDiv.appendChild(questionBlock);
+            }
+
+            // Show the download button if there are questions
+            if (questionsList.length > 0) {
+                downloadBtn.style.display = 'block';
             }
         }
 
@@ -320,6 +352,69 @@
                 ctx.fill();
                 ctx.stroke();
             }
+        }
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text('Question Paper', 105, 20, null, null, 'center');
+
+            doc.setFontSize(12);
+            let yPosition = 30; // Add space at the top before the first question
+
+            // Define column positions and widths
+            const leftMargin = 20;
+            const colWidth = 80;
+            const colGap = 10;
+            const questionColX = leftMargin;
+            const answerColX = leftMargin + colWidth + colGap;
+
+            // Table headers
+            doc.text('Questions', questionColX, yPosition);
+            doc.text('Answer', answerColX, yPosition);
+
+            // Draw a line under headers
+            yPosition += 5;
+            doc.line(leftMargin, yPosition, leftMargin + colWidth * 2 + colGap, yPosition);
+
+            yPosition += 10; // Space before the first question
+
+            questionsList.forEach((item, index) => {
+                // Question column
+                doc.text(`Q${index + 1}: ${item.question} = ?`, questionColX, yPosition);
+
+                // Answer column (empty for kids to write)
+                doc.text('_____________', answerColX, yPosition);
+
+                yPosition += 15;
+
+                // Add a vertical line between columns
+                doc.setDrawColor(0);
+                doc.setLineWidth(0.5);
+                doc.line(answerColX - colGap / 2, 25, answerColX - colGap / 2, yPosition - 5);
+
+                // Add a page if the content exceeds the page height
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+
+                    // Repeat headers on new page
+                    doc.text('Questions', questionColX, yPosition);
+                    doc.text('Answer', answerColX, yPosition);
+
+                    // Draw a line under headers
+                    yPosition += 5;
+                    doc.line(leftMargin, yPosition, leftMargin + colWidth * 2 + colGap, yPosition);
+
+                    yPosition += 10; // Space before the first question
+                }
+            });
+
+            // Save the PDF
+            doc.save('Question_Paper.pdf');
         }
     </script>
 </body>
