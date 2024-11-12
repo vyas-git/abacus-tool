@@ -135,6 +135,7 @@
                 <option value="1">One Digit</option>
                 <option value="2">Two Digits</option>
                 <option value="3">Three Digits</option>
+                <option value="5">Five Digits</option>
             </select>
         </label>
         <label>
@@ -167,7 +168,7 @@
 
     <!-- JavaScript Logic -->
     <script>
-        const questionsList = []; // Array to store questions
+        const questionsList = []; // Array to store questions and answers
 
         function generateQuestions() {
             const digits = parseInt(document.getElementById('digits').value);
@@ -225,8 +226,8 @@
                     continue;
                 }
 
-                // Store the question
-                questionsList.push({ question: question });
+                // Store the question and answer
+                questionsList.push({ question: question, answer: answer });
 
                 // Create a block for each question
                 const questionBlock = document.createElement('div');
@@ -382,6 +383,9 @@
 
             yPosition += 10; // Space before the first question
 
+            // Store header Y position for vertical line
+            const headerYPosition = yPosition - 15;
+
             questionsList.forEach((item, index) => {
                 // Question column
                 doc.text(`Q${index + 1}: ${item.question} = ?`, questionColX, yPosition);
@@ -391,13 +395,13 @@
 
                 yPosition += 15;
 
-                // Add a vertical line between columns
-                doc.setDrawColor(0);
-                doc.setLineWidth(0.5);
-                doc.line(answerColX - colGap / 2, 25, answerColX - colGap / 2, yPosition - 5);
-
                 // Add a page if the content exceeds the page height
                 if (yPosition > 270) {
+                    // Draw vertical line before adding a new page
+                    doc.setDrawColor(0);
+                    doc.setLineWidth(0.5);
+                    doc.line(answerColX - colGap / 2, headerYPosition, answerColX - colGap / 2, yPosition - 5);
+
                     doc.addPage();
                     yPosition = 20;
 
@@ -410,6 +414,33 @@
                     doc.line(leftMargin, yPosition, leftMargin + colWidth * 2 + colGap, yPosition);
 
                     yPosition += 10; // Space before the first question
+
+                    // Update headerYPosition for the new page
+                    headerYPosition = yPosition - 15;
+                }
+            });
+
+            // Draw vertical line between columns
+            doc.setDrawColor(0);
+            doc.setLineWidth(0.5);
+            doc.line(answerColX - colGap / 2, headerYPosition, answerColX - colGap / 2, yPosition - 5);
+
+            // Add Answers on a new page
+            doc.addPage();
+            doc.setFontSize(16);
+            doc.text('Answer Key', 105, 20, null, null, 'center');
+
+            doc.setFontSize(12);
+            yPosition = 30; // Reset yPosition for the answers page
+
+            questionsList.forEach((item, index) => {
+                doc.text(`Q${index + 1}: ${item.question} = ${item.answer}`, leftMargin, yPosition);
+                yPosition += 10;
+
+                // Add a page if the content exceeds the page height
+                if (yPosition > 280) {
+                    doc.addPage();
+                    yPosition = 20;
                 }
             });
 
