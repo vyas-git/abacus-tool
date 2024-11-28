@@ -384,7 +384,7 @@
             yPosition += 10; // Space before the first question
 
             // Store header Y position for vertical line
-            const headerYPosition = yPosition - 15;
+            let headerYPosition = yPosition - 15; // Changed from const to let
 
             questionsList.forEach((item, index) => {
                 // Question column
